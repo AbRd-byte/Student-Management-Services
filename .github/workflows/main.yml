@@ -1,14 +1,16 @@
-name: Student-Management Web API CI/CD
+name: Student Management API CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
       - develop
+
   pull_request:
     branches:
       - main
       - develop
+
   workflow_dispatch:
 
 env:
@@ -20,7 +22,7 @@ env:
 
 jobs:
   build-test:
-    name: Build & Test
+    name: Restore, Build & Test
     runs-on: ubuntu-latest
 
     permissions:
@@ -44,27 +46,30 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore Dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
 
       - name: Build Solution
-        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        run: >
+          dotnet build "${{ env.SOLUTION_PATH }}"
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-restore
 
       - name: Run Unit Tests
-        run: |
-          dotnet test ${{ env.SOLUTION_PATH }} \
-          --configuration ${{ env.BUILD_CONFIGURATION }} \
-          --no-build \
-          --verbosity normal \
+        run: >
+          dotnet test "${{ env.SOLUTION_PATH }}"
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
+          --verbosity normal
           --collect:"XPlat Code Coverage"
 
       - name: Publish Web API
-        run: |
-          dotnet publish ${{ env.PROJECT_PATH }} \
-          --configuration ${{ env.BUILD_CONFIGURATION }} \
-          --no-build \
+        run: >
+          dotnet publish "${{ env.PROJECT_PATH }}"
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --no-build
           --output ./publish
 
-      - name: Upload Publish Artifact
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
@@ -72,10 +77,10 @@ jobs:
           if-no-files-found: error
 
   deploy:
-    name: Deploy Web API
+    name: Deploy to Azure App Service
     needs: build-test
 
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
 
     runs-on: ubuntu-latest
 
@@ -87,7 +92,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Download Published Artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
