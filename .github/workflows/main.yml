@@ -14,9 +14,9 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
   BUILD_CONFIGURATION: 'Release'
-  PROJECT_PATH: 'src/EmployeeManagement.API/EmployeeManagement.API.csproj'
-  SOLUTION_PATH: 'EmployeeManagement.sln'
-  ARTIFACT_NAME: 'employee-management-api'
+  PROJECT_PATH: 'Student-Management/Student-Management.csproj'
+  SOLUTION_PATH: 'Student-Management.sln'
+  ARTIFACT_NAME: 'student-management-api'
 
 jobs:
   build-test:
