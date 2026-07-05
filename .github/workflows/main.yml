@@ -1,0 +1,90 @@
+name: Student Management API CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  BUILD_CONFIGURATION: 'Release'
+  SOLUTION_PATH: 'Student-Management.sln'
+  PROJECT_PATH: 'Student-Management/Student-Management.csproj'
+  ARTIFACT_NAME: 'student-management-api'
+
+jobs:
+
+  ci:
+    name: Build, Test & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Display Branch
+        run: |
+          echo "Branch = ${{ github.ref }}"
+          echo "Event = ${{ github.event_name }}"
+
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Build
+        run: dotnet build "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Test
+        run: dotnet test "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+
+      - name: Publish
+        run: dotnet publish "${{ env.PROJECT_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --output ./publish
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./publish
+
+  cd:
+    name: Deploy to Render
+    needs: ci
+    runs-on: ubuntu-latest
+    if: success() && github.ref == 'refs/heads/main'
+
+    environment:
+      name: Production
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./publish
+
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.RENDER_DEPLOY_HOOK }}"
