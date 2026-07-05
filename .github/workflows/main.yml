@@ -23,13 +23,10 @@ env:
 jobs:
 
   ci:
-
     name: Build, Test & Publish
-
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -70,29 +67,24 @@ jobs:
           path: ./publish
 
   cd:
-
-    name: Deploy
-
+    name: Deploy to Render
     needs: ci
-
     runs-on: ubuntu-latest
-
     if: success() && github.ref == 'refs/heads/main'
 
     environment:
       name: Production
 
     steps:
-
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ./publish
 
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.RENDER_DEPLOY_HOOK }}"
