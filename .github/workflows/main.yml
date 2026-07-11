@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: "8.0.x"
   BUILD_CONFIGURATION: Release
   SOLUTION_PATH: Student-Management.sln
   ARTIFACT_NAME: student-management-api
@@ -29,13 +29,23 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Verify .NET SDK
+        run: |
+          dotnet --version
+          dotnet --list-sdks
+
       - name: Show Repository Structure
         run: |
           echo "Repository structure:"
           ls -R
 
+      - name: Find Solution File
+        run: |
+          find . -name "*.sln"
+
       - name: Find Project File
         id: find_project
+        shell: bash
         run: |
           PROJECT=$(find . -name "*.csproj" | head -n 1)
 
@@ -48,29 +58,33 @@ jobs:
           echo "PROJECT_PATH=$PROJECT" >> $GITHUB_ENV
 
       - name: Restore Dependencies
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+        run: |
+          dotnet restore "${{ env.SOLUTION_PATH }}"
 
       - name: Build
-        run: dotnet build "${{ env.SOLUTION_PATH }}" \
-          --configuration ${{ env.BUILD_CONFIGURATION }} \
-          --no-restore
+        run: |
+          dotnet build "${{ env.SOLUTION_PATH }}" \
+            --configuration "${{ env.BUILD_CONFIGURATION }}" \
+            --no-restore
 
       - name: Run Tests
-        run: dotnet test "${{ env.SOLUTION_PATH }}" \
-          --configuration ${{ env.BUILD_CONFIGURATION }} \
-          --no-build
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" \
+            --configuration "${{ env.BUILD_CONFIGURATION }}" \
+            --no-build
 
       - name: Publish
         run: |
-          echo "Publishing $PROJECT_PATH"
+          echo "Publishing project: $PROJECT_PATH"
 
           dotnet publish "$PROJECT_PATH" \
-            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --configuration "${{ env.BUILD_CONFIGURATION }}" \
             --no-build \
             --output ./publish
 
       - name: Verify Publish Folder
-        run: ls -R ./publish
+        run: |
+          ls -R ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
