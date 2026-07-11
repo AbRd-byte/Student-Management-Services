@@ -2,25 +2,26 @@ name: Student Management API CI/CD
 
 on:
   push:
-    branches: [ "master" ]   # your repo is on master branch
+    branches:
+      - master
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - master
   workflow_dispatch:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  BUILD_CONFIGURATION: 'Release'
-  SOLUTION_PATH: 'Student-Management.sln'
-  PROJECT_PATH: './Student-Management/Student-Management.csproj'
-  ARTIFACT_NAME: 'student-management-api'
+  BUILD_CONFIGURATION: Release
+  SOLUTION_PATH: Student-Management.sln
+  ARTIFACT_NAME: student-management-api
 
 jobs:
   ci:
-    name: Build & Test
+    name: Build, Test & Publish
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -28,20 +29,48 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: List Repo Files (Debug)
-        run: ls -R
+      - name: Show Repository Structure
+        run: |
+          echo "Repository structure:"
+          ls -R
+
+      - name: Find Project File
+        id: find_project
+        run: |
+          PROJECT=$(find . -name "*.csproj" | head -n 1)
+
+          if [ -z "$PROJECT" ]; then
+            echo "No .csproj file found!"
+            exit 1
+          fi
+
+          echo "Project found: $PROJECT"
+          echo "PROJECT_PATH=$PROJECT" >> $GITHUB_ENV
 
       - name: Restore Dependencies
         run: dotnet restore "${{ env.SOLUTION_PATH }}"
 
       - name: Build
-        run: dotnet build "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        run: dotnet build "${{ env.SOLUTION_PATH }}" \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-restore
 
       - name: Run Tests
-        run: dotnet test "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+        run: dotnet test "${{ env.SOLUTION_PATH }}" \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-build
 
       - name: Publish
-        run: dotnet publish "${{ env.PROJECT_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --output ./publish
+        run: |
+          echo "Publishing $PROJECT_PATH"
+
+          dotnet publish "$PROJECT_PATH" \
+            --configuration ${{ env.BUILD_CONFIGURATION }} \
+            --no-build \
+            --output ./publish
+
+      - name: Verify Publish Folder
+        run: ls -R ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -53,7 +82,8 @@ jobs:
     name: Deploy to Render
     needs: ci
     runs-on: ubuntu-latest
-    if: success() && github.ref == 'refs/heads/master'
+
+    if: github.ref == 'refs/heads/master' && success()
 
     steps:
       - name: Download Artifact
@@ -62,9 +92,6 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ./publish
 
-      - name: Trigger Render Deploy Hook
+      - name: Trigger Render Deploy
         run: |
-          curl -X POST \
-            -H "Accept: application/json" \
-            -H "Content-Type: application/json" \
-            "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
