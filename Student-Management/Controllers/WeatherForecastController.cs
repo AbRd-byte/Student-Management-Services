@@ -17,7 +17,10 @@ namespace Student_Management.Controllers
         {
             _logger = logger;
         }
-
+        /// <summary>
+        /// Gets the weather forecast.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {
@@ -29,5 +32,6 @@ namespace Student_Management.Controllers
             })
             .ToArray();
         }
+
     }
 }
