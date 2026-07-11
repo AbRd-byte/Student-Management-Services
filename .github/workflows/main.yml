@@ -10,8 +10,8 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
   BUILD_CONFIGURATION: 'Release'
-  SOLUTION_PATH: 'Student-Management.sln'
-  PROJECT_PATH: 'Student-Management/Student-Management.csproj'
+  SOLUTION_PATH: 'StudentManagement.sln'
+  PROJECT_PATH: 'Student-Management/StudentManagement.csproj'
   ARTIFACT_NAME: 'student-management-api'
 
 jobs:
