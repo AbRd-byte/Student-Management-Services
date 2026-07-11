@@ -1,4 +1,4 @@
-name: API CI/CD
+name: Student Management API CI/CD
 
 on:
   push:
@@ -10,9 +10,9 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
   BUILD_CONFIGURATION: 'Release'
-  SOLUTION_PATH: 'YourProject.sln'
-  PROJECT_PATH: 'YourProject/YourProject.csproj'
-  ARTIFACT_NAME: 'api-artifact'
+  SOLUTION_PATH: 'Student-Management.sln'
+  PROJECT_PATH: 'Student-Management/Student-Management.csproj'
+  ARTIFACT_NAME: 'student-management-api'
 
 jobs:
   ci:
@@ -27,6 +27,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: List Repo Files (Debug)
+        run: ls -R
 
       - name: Restore Dependencies
         run: dotnet restore "${{ env.SOLUTION_PATH }}"
