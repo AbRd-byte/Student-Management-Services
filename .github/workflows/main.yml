@@ -1,33 +1,26 @@
-name: Student Management API CI/CD
+name: API CI/CD
 
 on:
   push:
-    branches:
-      - main
-      - develop
-
+    branches: [ "main" ]
   pull_request:
-    branches:
-      - main
-      - develop
-
+    branches: [ "main" ]
   workflow_dispatch:
 
 env:
   DOTNET_VERSION: '8.0.x'
   BUILD_CONFIGURATION: 'Release'
-  SOLUTION_PATH: 'Student-Management.sln'
-  PROJECT_PATH: 'Student-Management/Student-Management.csproj'
-  ARTIFACT_NAME: 'student-management-api'
+  SOLUTION_PATH: 'YourProject.sln'
+  PROJECT_PATH: 'YourProject/YourProject.csproj'
+  ARTIFACT_NAME: 'api-artifact'
 
 jobs:
-
   ci:
-    name: Build, Test & Publish
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -35,26 +28,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Display Branch
-        run: |
-          echo "Branch = ${{ github.ref }}"
-          echo "Event = ${{ github.event_name }}"
-
-      - name: Cache NuGet Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore
+      - name: Restore Dependencies
         run: dotnet restore "${{ env.SOLUTION_PATH }}"
 
       - name: Build
         run: dotnet build "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      - name: Test
+      - name: Run Tests
         run: dotnet test "${{ env.SOLUTION_PATH }}" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
 
       - name: Publish
@@ -71,9 +51,6 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     if: success() && github.ref == 'refs/heads/main'
-
-    environment:
-      name: Production
 
     steps:
       - name: Download Artifact
